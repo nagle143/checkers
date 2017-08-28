@@ -1,5 +1,4 @@
 // checkers.js
-
 /** The state of the game */
 var state = {
   over: false,
@@ -16,6 +15,8 @@ var state = {
     ['b',null,'b',null,'b',null,'b',null,'b',null]
   ]
 }
+
+main();
 
 /** @function getLegalMoves
   * returns a list of legal moves for the specified
@@ -153,6 +154,82 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   */
 function applyMove(move) {
   // TODO: Apply the move
+  if(move.type === "slide")
+  {
+    state.board[move.y][move.x] = state.board[y][x];
+    state.board[y][x] = null;
+  }
+  else
+  {
+    move.captures.forEach(function(square) {
+      state.board[square.y][square.x] = null;
+    });
+    var index = move.landings.length - 1;
+    state.board[move.landings[index].y][move.landings[index].x] = state.board[y][x];
+    state.board[y][x] = null;
+  }
+}
   // TODO: Check for victory
+function checkVictory()
+{
+  wCount = 0;
+  bCount = 0;
+  for(y = 0; y < 10; y++) {
+      for(x = 0; x < 10; x++)
+      {
+        if(state.board[y][x] === "w")
+          wCount++;
+        if(state.board[y][x] === "b")
+          bCount++;
+      }
+  }
+  if(wCount === 0)
+  {
+    state.over = true;
+    return "Black Wins";
+  }
+  if(bCount === 0)
+  {
+    state.over = true;
+    return "White Wins";
+  }
+}
   // TODO: Start the next turn
+function nextTurn()
+{
+  if(state.turn === "b") state.turn = "w";
+  else state.turn = "b";
+}
+
+function printBoard()
+{
+  for(y = 0; y < 9; y++)
+  {
+    var rowString = "";
+    for(x = 0; x < 9; x++)
+    {
+      switch (state.board[y][x]) {
+        case "w":
+          rowString += " w ";
+          break;
+        case "wk":
+          rowString += " wk";
+          break;
+        case "b":
+          rowString += " b ";
+          break;
+        case "bk":
+          rowString += " bk";
+          break;
+        default:
+          rowString += " _ ";
+      }
+    }
+    console.log(rowString);
+  }
+}
+
+function main()
+{
+  printBoard();
 }
