@@ -1,22 +1,23 @@
 // checkers.js
+
 /** The state of the game */
 var state = {
   over: false,
   turn: 'b',
   board: [
-    [null,'w',null,'w',null,'w',null,'w',null,'w'],
+    [null,'w',null, 'w', null, 'w',  null, 'w',  null, 'w'],
     ['w',null,'w',null,'w',null,'w',null,'w',null],
     [null,'w',null,'w',null,'w',null,'w',null,'w'],
+    ['w',null,'w',null,'w',null,'w',null,'w',null],
     [null, null, null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null, null, null],
+    [null,'b',null,'b',null,'b',null,'b',null,'b'],
     ['b',null,'b',null,'b',null,'b',null,'b',null],
     [null,'b',null,'b',null,'b',null,'b',null,'b'],
     ['b',null,'b',null,'b',null,'b',null,'b',null]
-  ]
+  ],
+  captures: {w: 0, b: 0}
 }
-
-main();
 
 /** @function getLegalMoves
   * returns a list of legal moves for the specified
@@ -31,13 +32,13 @@ function getLegalMoves(piece, x, y) {
   var moves = [];
   switch(piece) {
     case 'b': // black can only move down the board diagonally
-      checkSlide(moves, x-1, y+1);
-      checkSlide(moves, x+1, y+1);
+      checkSlide(moves, x-1, y-1);
+      checkSlide(moves, x+1, y-1);
       checkJump(moves, {captures:[],landings:[]}, piece, x, y);
       break;
     case 'w':  // white can only move up the board diagonally
-      checkSlide(moves, x-1, y-1);
-      checkSlide(moves, x+1, y-1);
+      checkSlide(moves, x-1, y+1);
+      checkSlide(moves, x+1, y+1);
       checkJump(moves, {captures:[],landings:[]}, piece, x, y);
       break;
     case 'bk': // kings can move diagonally any direction
@@ -97,19 +98,19 @@ function copyJumps(jumps) {
 function checkJump(moves, jumps, piece, x, y) {
   switch(piece) {
     case 'b': // black can only move down the board diagonally
-      checkLanding(moves, copyJumps(jumps), x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), x+1, y+1, x+2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
       break;
     case 'w':  // white can only move up the board diagonally
-      checkLanding(moves, copyJumps(jumps), x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
       break;
     case 'bk': // kings can move diagonally any direction
     case 'wk': // kings can move diagonally any direction
-      checkLanding(moves, copyJumps(jumps), x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), x+1, y+1, x+2, y+2);
-      checkLanding(moves, copyJumps(jumps), x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
       break;
   }
 }
@@ -134,8 +135,8 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   // Check landing square is unoccupied
   if(state.board[ly][lx]) return;
   // Check capture square is occuped by opponent
-  if(piece == 'b' || 'bk' && state.board[cy][cx] != 'w' || state.board[cy][cx] != 'wk') return;
-  if(piece == 'w' || 'wk' && state.board[cy][cx] != 'b' || state.board[cy][cx] != 'bk') return;
+  if((piece === 'b' || piece === 'bk') && !(state.board[cy][cx] === 'w' || state.board[cy][cx] === 'wk')) return;
+  if((piece === 'w' || piece === 'wk') && !(state.board[cy][cx] === 'b' || state.board[cy][cx] === 'bk')) return;
   // legal jump! add it to the moves list
   jumps.captures.push({x: cx, y: cy});
   jumps.landings.push({x: lx, y: ly});
@@ -152,16 +153,15 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   * A function to apply the selected move to the game
   * @param {object} move - the move to apply.
   */
-function applyMove(move) {
+function applyMove(x, y, move) {
   // TODO: Apply the move
-  if(move.type === "slide")
-  {
+  if(move.type === "slide") {
     state.board[move.y][move.x] = state.board[y][x];
     state.board[y][x] = null;
-  }
-  else
-  {
-    move.captures.forEach(function(square) {
+  } else {
+    move.captures.forEach(function(square){
+      var piece = state.board[square.y][square.x];
+      state.captures[piece.substring(0,1)]++;
       state.board[square.y][square.x] = null;
     });
     var index = move.landings.length - 1;
@@ -169,67 +169,69 @@ function applyMove(move) {
     state.board[y][x] = null;
   }
 }
-  // TODO: Check for victory
-function checkVictory()
-{
-  wCount = 0;
-  bCount = 0;
-  for(y = 0; y < 10; y++) {
-      for(x = 0; x < 10; x++)
-      {
-        if(state.board[y][x] === "w")
-          wCount++;
-        if(state.board[y][x] === "b")
-          bCount++;
-      }
-  }
-  if(wCount === 0)
-  {
+
+/** @function checkForVictory
+  * Checks to see if a victory has been actived
+  * (All peices of one color have been captured)
+  * @return {String} one of three values:
+  * "White wins", "Black wins", or null, if neither
+  * has yet won.
+  */
+function checkForVictory() {
+  if(state.captures.w == 20) {
     state.over = true;
-    return "Black Wins";
+    return 'black wins';
   }
-  if(bCount === 0)
-  {
+  if(state.captures.b == 20) {
     state.over = true;
-    return "White Wins";
+    return 'white wins';
   }
-}
-  // TODO: Start the next turn
-function nextTurn()
-{
-  if(state.turn === "b") state.turn = "w";
-  else state.turn = "b";
+  return null;
 }
 
-function printBoard()
-{
-  for(y = 0; y < 9; y++)
+/** @function nextTurn()
+  * Starts the next turn by changing the
+  * turn property of state.
+  */
+function nextTurn() {
+  if(state.turn === 'b') state.turn = 'w';
+  else state.turn = 'b';
+}
+
+function handleCheckerClick(event) {
+  event.preventDefault();
+  var parentID = event.target.parent.id;
+  var x = parseInt(parentID.getCharAt(7));
+  var y = parseInt(parentID.getCharAt(9));
+  var moves = getLegalMoves(state.board[y][x], x, y);
+  console.log(x,y);
+}
+
+function setup() {
+  var board = document.createElement('section');
+  board.id = 'game-board';
+  document.body.appendChild(board);
+  for(var y = 0; y < state.board.length; y++)
   {
-    var rowString = "";
-    for(x = 0; x < 9; x++)
+    for(var x = 0; x < state.board[y].length; x++)
     {
-      switch (state.board[y][x]) {
-        case "w":
-          rowString += " w ";
-          break;
-        case "wk":
-          rowString += " wk";
-          break;
-        case "b":
-          rowString += " b ";
-          break;
-        case "bk":
-          rowString += " bk";
-          break;
-        default:
-          rowString += " _ ";
+      var square = document.createElement('div');
+      square.id = "square" + x + '-' + y;
+      square.classList.add('square');
+      if( y+x % 2 == 1)
+      {
+        square.classList.add('black');
+      }
+      board.appendChild(square);
+      if(state.board[y][x]) {
+        var checker = document.createElement('div');
+        checker.classList.add('checker');
+        checker.classList.add('checker-' + state.board[y][x]);
+        checker.onclick = handleCheckerClick;
+        square.appendChild(checker);
       }
     }
-    console.log(rowString);
   }
 }
 
-function main()
-{
-  printBoard();
-}
+setup();
